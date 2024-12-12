@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/overlap_processing" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
