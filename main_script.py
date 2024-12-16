@@ -15,7 +15,7 @@ def run_main_script():
             self.setLayout(QVBoxLayout())
 
             self.option_combo = QComboBox()
-            self.option_combo.addItems(['No Decision', 'With Resolution or Agreement'])
+            self.option_combo.addItems(['Select an option', 'No Decision', 'With Resolution or Agreement'])
             self.layout().addWidget(QLabel('Select the Case Type:'))
             self.layout().addWidget(self.option_combo)
 
@@ -63,12 +63,12 @@ def run_main_script():
                 ea_layer_names = [name for name in layer_names if len(name) == 14 and "_landmark" not in name]
 
                 self.ND1_combo = QComboBox()
-                self.ND1_combo.addItems(ea_layer_names)
+                self.ND1_combo.addItems(['Select a layer'] + ea_layer_names)
                 self.layout().addWidget(QLabel('Select the layer for the first area with No Decision'))
                 self.layout().addWidget(self.ND1_combo)
 
                 self.ND2_combo = QComboBox()
-                self.ND2_combo.addItems(ea_layer_names)
+                self.ND2_combo.addItems(['Select a layer'] + ea_layer_names)
                 self.layout().addWidget(QLabel('Select the layer for the second area with No Decision'))
                 self.layout().addWidget(self.ND2_combo)
 
@@ -265,12 +265,12 @@ def run_main_script():
                 ea_layer_names = [name for name in layer_names if len(name) == 14 and "_landmark" not in name]
 
                 self.prevailingEA_combo = QComboBox()
-                self.prevailingEA_combo.addItems(ea_layer_names)
+                self.prevailingEA_combo.addItems(['Select a layer'] + ea_layer_names)
                 self.layout().addWidget(QLabel('Select the Prevailing EA layer'))
                 self.layout().addWidget(self.prevailingEA_combo)
 
                 self.transferEA_combo = QComboBox()
-                self.transferEA_combo.addItems(ea_layer_names)
+                self.transferEA_combo.addItems(['Select a layer'] + ea_layer_names)
                 self.layout().addWidget(QLabel('Select the Transfer EA layer'))
                 self.layout().addWidget(self.transferEA_combo)
 

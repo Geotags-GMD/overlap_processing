@@ -6,8 +6,8 @@
 name=OverlapProcessing
 qgisMinimumVersion=3.0
 description=To process overlap building points for the 2024 POPCEN-CBMS
-version=0.1
-author=GMD
+version=1.0.2
+author=Geospatial Management Division
 email=GMD
 
 about=For official use only. Not for public dissemination.
