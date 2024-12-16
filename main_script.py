@@ -219,7 +219,6 @@ def run_main_script():
 
     # Define Option B code block
     def option_b_code():
-        # Create a dialog class to select layers
         class LayerSelectionDialog(QDialog):
             def __init__(self, parent=None):
                 super().__init__(parent)
@@ -284,7 +283,62 @@ def run_main_script():
             break
 
         if first_geocode_value is None:
-            raise Exception("No Geocode value found in Prevailing EA layer")
+            raise Exception("No GEOCODE value found in Prevailing EA layer")
+
+        first_eacode_value = None
+        for feature in prevailingEA_layer.getFeatures():
+            first_eacode_value = feature['EA_CODE']
+            break
+
+        if first_eacode_value is None:
+            raise Exception("No EA_CODE value found in Prevailing EA layer")
+            
+
+        first_regcode_value = None
+        for feature in prevailingEA_layer.getFeatures():
+            first_regcode_value = feature['REG_NAME']
+            break
+
+        if first_regcode_value is None:
+            raise Exception("No REG_NAME value found in Prevailing EA layer")
+            
+            
+        first_provcode_value = None
+        for feature in prevailingEA_layer.getFeatures():
+            first_provcode_value = feature['PROV_NAME']
+            break
+
+        if first_provcode_value is None:
+            raise Exception("No PROV_NAME value found in Prevailing EA layer")
+            
+        first_muncode_value = None
+        for feature in prevailingEA_layer.getFeatures():
+            first_muncode_value = feature['MUN_NAME']
+            break
+
+        if first_muncode_value is None:
+            raise Exception("No MUN_NAME value found in Prevailing EA layer")
+            
+        first_bgycode_value = None
+        for feature in prevailingEA_layer.getFeatures():
+            first_bgycode_value = feature['BGY_NAME']
+            break
+
+        if first_bgycode_value is None:
+            raise Exception("No BGY_NAME value found in Prevailing EA layer")
+
+        # Find the maximum value in the BSN column that is less than 77777
+        max_bsn_value = None
+        for feature in prevailingEA_layer.getFeatures():
+            bsn_value_str = feature['BSN']
+            bsn_value = int(bsn_value_str)  # Convert to integer for comparison
+            if max_bsn_value is None:
+                max_bsn_value = 70001
+            if bsn_value < 77777 and bsn_value > 70000 and bsn_value > max_bsn_value:
+                max_bsn_value = bsn_value
+
+        # Initialize the counter for the new BSN values starting from max_bsn_value + 1
+        bsn_counter = max_bsn_value + 1
 
         # Create a temporary memory layer to store the results with a name based on TransferEA layer
         output_layer_name = f"{prevailingEA_layer.name()}_RA"
@@ -302,7 +356,7 @@ def run_main_script():
         output_layer.updateFields()
 
         # Define a function to add points to the output layer
-        def add_points_within_reference(points_layer, reference_layer, output_layer, case_value, prev_id_value=None, trans_id_value=None):
+        def add_points_within_reference(points_layer, reference_layer, output_layer, case_value, bsn_counter, prev_id_value=None, trans_id_value=None, from_transfer_ea=False):
             for point_feature in points_layer.getFeatures():
                 point_geometry = point_feature.geometry()
                 for reference_feature in reference_layer.getFeatures():
@@ -311,9 +365,37 @@ def run_main_script():
                         new_feature = QgsFeature(output_layer.fields())
                         new_feature.setGeometry(point_geometry)
                         trans_id = point_feature['CBMS_GEOID'] if trans_id_value else None
+                        geocode_field = output_layer.fields().lookupField('GEOCODE')
+                        bsn_field = output_layer.fields().lookupField('BSN')
+                        cbms_geoid_field = output_layer.fields().lookupField('CBMS_GEOID')
+                        remarks_field = output_layer.fields().lookupField('REMARKS')
+                        ea_code_field = output_layer.fields().lookupField('EA_CODE')
+                        reg_code_field = output_layer.fields().lookupField('REG_NAME')
+                        prov_code_field = output_layer.fields().lookupField('PROV_NAME')
+                        mun_code_field = output_layer.fields().lookupField('MUN_NAME')
+                        bgy_code_field = output_layer.fields().lookupField('BGY_NAME')
+
                         attributes = point_feature.attributes() + [trans_id, prev_id_value, case_value]
+                        
+
+                        if from_transfer_ea:
+                            transfer_ea_geocode = attributes[geocode_field]
+                            attributes[remarks_field] = "From EA " + str(transfer_ea_geocode) + " old BSN is: " + str(attributes[bsn_field])
+                            new_bsn_value = bsn_counter
+                            attributes[bsn_field] = new_bsn_value
+                            attributes[cbms_geoid_field] = str(first_geocode_value) + str(new_bsn_value).zfill(len(str(new_bsn_value)))
+                            bsn_counter += 1
+
+                        attributes[geocode_field] = first_geocode_value
+                        attributes[ea_code_field] = first_eacode_value
+                        attributes[reg_code_field] = first_regcode_value
+                        attributes[prov_code_field] = first_provcode_value
+                        attributes[mun_code_field] = first_muncode_value
+                        attributes[bgy_code_field] = first_bgycode_value
                         new_feature.setAttributes(attributes)
                         output_layer.dataProvider().addFeature(new_feature)
+            
+            return bsn_counter
 
         # Fetch the TRANS_ID value from the TransferEA layer
         for feature in transferEA_layer.getFeatures():
@@ -321,8 +403,8 @@ def run_main_script():
             break
 
         # Add points from TransferEA and PrevailingEA layers to the output layer with the appropriate CASE value and ID values
-        add_points_within_reference(transferEA_layer, referenceEA_layer, output_layer, 'WITH_RESOLUTION_AGREEMENT', first_geocode_value, transfer_EA_transID)
-        add_points_within_reference(prevailingEA_layer, referenceEA_layer, output_layer, None, first_geocode_value)
+        bsn_counter = add_points_within_reference(transferEA_layer, referenceEA_layer, output_layer, 'WITH_RESOLUTION_AGREEMENT', bsn_counter, first_geocode_value, transfer_EA_transID, from_transfer_ea=True)
+        bsn_counter = add_points_within_reference(prevailingEA_layer, referenceEA_layer, output_layer, None, bsn_counter, first_geocode_value, from_transfer_ea=False)
 
         # Add the output layer to the QGIS project
         QgsProject.instance().addMapLayer(output_layer)
