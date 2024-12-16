@@ -2,7 +2,7 @@ from qgis.utils import iface
 
 def run_main_script():
     import processing
-    from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QPushButton, QApplication
+    from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QPushButton, QApplication, QMessageBox
     from PyQt5.QtCore import QVariant
     from qgis.core import QgsField, QgsProject, QgsVectorLayer, QgsFeature
     import sys
@@ -19,18 +19,28 @@ def run_main_script():
             self.layout().addWidget(QLabel('Select the Case Type:'))
             self.layout().addWidget(self.option_combo)
 
+            # Add button layout
+            button_layout = QVBoxLayout()
             self.ok_button = QPushButton('OK')
+            self.cancel_button = QPushButton('Cancel')
+            
             self.ok_button.clicked.connect(self.accept)
+            self.cancel_button.clicked.connect(self.reject)
+            
             self.layout().addWidget(self.ok_button)
+            self.layout().addWidget(self.cancel_button)
 
         def get_selected_option(self):
             return self.option_combo.currentText()
 
     # Create and show the dialog
     dialog = OptionSelectionDialog()
-    if not dialog.exec_():
-        raise Exception("Option selection canceled")
-
+    result = dialog.exec_()
+    
+    if result != QDialog.Accepted:
+        QMessageBox.information(None, "Process Cancelled", "Operation cancelled by user.")
+        return  # Exit the function instead of raising an exception
+    
     selected_option = dialog.get_selected_option()
 
     # Define Option A code block
@@ -70,9 +80,16 @@ def run_main_script():
                 self.layout().addWidget(QLabel('Select the ea2024 layer of the second area selected'))
                 self.layout().addWidget(self.ND2_EA_combo)
 
+                # Add buttons
+                button_layout = QVBoxLayout()
                 self.ok_button = QPushButton('OK')
+                self.cancel_button = QPushButton('Cancel')
+                
                 self.ok_button.clicked.connect(self.accept)
+                self.cancel_button.clicked.connect(self.reject)
+                
                 self.layout().addWidget(self.ok_button)
+                self.layout().addWidget(self.cancel_button)
 
                 self.ND1_combo.currentIndexChanged.connect(self.update_ND1_EA_combo)
                 self.ND2_combo.currentIndexChanged.connect(self.update_ND2_EA_combo)
@@ -92,6 +109,17 @@ def run_main_script():
                 self.ND2_EA_combo.addItems(reference_layer_names_ND2)
 
             def accept(self):
+                # Validate selections
+                if self.ND1_combo.currentText() == self.ND2_combo.currentText():
+                    QMessageBox.warning(self, "Invalid Selection", 
+                        "Please select different layers for ND1 and ND2.")
+                    return
+                
+                if not self.ND1_EA_combo.currentText() or not self.ND2_EA_combo.currentText():
+                    QMessageBox.warning(self, "Missing Selection",
+                        "Please select EA2024 layers for both areas.")
+                    return
+
                 self.ND1_layer = QgsProject.instance().mapLayersByName(self.ND1_combo.currentText())[0]
                 self.ND2_layer = QgsProject.instance().mapLayersByName(self.ND2_combo.currentText())[0]
                 self.ND1_EA_layer = QgsProject.instance().mapLayersByName(self.ND1_EA_combo.currentText())[0]
@@ -99,10 +127,12 @@ def run_main_script():
                 super().accept()
 
         # Create and show the dialog
-
         dialog = LayerSelectionDialog()
-        if not dialog.exec_():
-            raise Exception("Layer selection canceled")
+        result = dialog.exec_()
+        
+        if result != QDialog.Accepted:
+            QMessageBox.information(None, "Process Cancelled", "Layer selection cancelled by user.")
+            return  # Exit the function instead of raising an exception
 
         ND1_layer = dialog.ND1_layer
         ND2_layer = dialog.ND2_layer
@@ -248,9 +278,16 @@ def run_main_script():
                 self.layout().addWidget(QLabel('Select the ea2024 layer of the Prevailing EA'))
                 self.layout().addWidget(self.referenceEA_combo)
 
+                # Add buttons
+                button_layout = QVBoxLayout()
                 self.ok_button = QPushButton('OK')
+                self.cancel_button = QPushButton('Cancel')
+                
                 self.ok_button.clicked.connect(self.accept)
+                self.cancel_button.clicked.connect(self.reject)
+                
                 self.layout().addWidget(self.ok_button)
+                self.layout().addWidget(self.cancel_button)
 
                 self.prevailingEA_combo.currentIndexChanged.connect(self.update_reference_combo)
 
@@ -262,6 +299,17 @@ def run_main_script():
                 self.referenceEA_combo.addItems(reference_layer_names)
 
             def accept(self):
+                # Validate selections
+                if self.transferEA_combo.currentText() == self.prevailingEA_combo.currentText():
+                    QMessageBox.warning(self, "Invalid Selection",
+                        "Transfer EA and Prevailing EA cannot be the same layer.")
+                    return
+                
+                if not self.referenceEA_combo.currentText():
+                    QMessageBox.warning(self, "Missing Selection",
+                        "Please select the EA2024 reference layer.")
+                    return
+
                 self.transferEA_layer = QgsProject.instance().mapLayersByName(self.transferEA_combo.currentText())[0]
                 self.prevailingEA_layer = QgsProject.instance().mapLayersByName(self.prevailingEA_combo.currentText())[0]
                 self.referenceEA_layer = QgsProject.instance().mapLayersByName(self.referenceEA_combo.currentText())[0]
@@ -269,8 +317,11 @@ def run_main_script():
 
         # Create and show the dialog
         dialog = LayerSelectionDialog()
-        if not dialog.exec_():
-            raise Exception("Layer selection canceled")
+        result = dialog.exec_()
+        
+        if result != QDialog.Accepted:
+            QMessageBox.information(None, "Process Cancelled", "Layer selection cancelled by user.")
+            return  # Exit the function instead of raising an exception
 
         transferEA_layer = dialog.transferEA_layer
         prevailingEA_layer = dialog.prevailingEA_layer

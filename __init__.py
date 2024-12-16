@@ -32,5 +32,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from .overlap_processing import OptionSelection
-    return OptionSelection(iface)
+    from .overlap_processing import OverlapProcessing
+    return OverlapProcessing(iface)
